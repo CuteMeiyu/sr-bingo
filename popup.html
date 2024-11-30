@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .board-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-gap: 1px;
+            background-color: black;
+        }
+
+        .scoreboard {
+            display: flex;
+            box-sizing: border-box;
+            flex-direction: row;
+            flex-wrap: wrap-reverse;
+            position: fixed;
+            bottom: 0;
+            color: #fff;
+            font-weight: bold;
+            background-color: #333;
+            width: 100vw;
+            cursor: pointer;
+        }
+
+        .scoreboard-item {
+            display: inline-block;
+            padding: 2px;
+            padding-inline: 10px;
+            color: #000;
+            font-weight: bold;
+            text-shadow:
+                -1px -1px 0 #fff,
+                1px -1px 0 #fff,
+                -1px 1px 0 #fff,
+                1px 1px 0 #fff;
+        }
+
+        .pickr {
+            height: 0;
+            visibility: hidden;
+        }
+
+        .cell {
+            position: relative;
+            background-color: #222;
+            border: 1px solid #666;
+            cursor: pointer;
+            color: #fff;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .rank2 {
+            border: 2px solid rgb(255, 255, 0);
+        }
+
+        .rank3 {
+            border: 2px solid rgb(255, 0, 0);
+        }
+
+        .rank4 {
+            border: 2px solid rgb(192, 0, 255);
+        }
+
+        .cell-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 90%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .cell-game {
+            position: absolute;
+            width: 100%;
+            bottom: 0%;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .cell-info {
+            position: absolute;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .cell-password {
+            position: absolute;
+            right: 0%;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .cell-star {
+            position: absolute;
+            bottom: 0%;
+            text-align: center;
+            word-break: break-all;
+            opacity: 0;
+        }
+
+        .cell-diff {
+            position: absolute;
+            bottom: 0%;
+            right: 1%;
+            text-align: center;
+            word-break: break-all;
+            opacity: 0;
+        }
+
+        .tooltip {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 4px;
+            position: absolute;
+            z-index: 1;
+            padding: 4px;
+
+            opacity: 0;
+            transform: scale(0.0);
+        }
+
+        .show {
+            opacity: 1;
+            transform: scale(1.0);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        .spinner-text {
+            color: rgb(255, 255, 255);
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(360deg);
+            }
+
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+
+        @keyframes font-flashing {
+
+            0%,
+            100% {
+                color: red;
+                text-shadow:
+                    -1px -1px 0 #fff,
+                    1px -1px 0 #fff,
+                    -1px 1px 0 #fff,
+                    1px 1px 0 #fff;
+            }
+
+            50% {
+                color: yellow;
+                text-shadow:
+                    -1px -1px 0 #000,
+                    1px -1px 0 #000,
+                    -1px 1px 0 #000,
+                    1px 1px 0 #000;
+            }
+        }
+
+        .flashing-font {
+            color: red;
+            animation: font-flashing 2s infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="spinner"></div>
+        <span class="spinner-text" id="spinner-text">正在加载...</span>
+    </div>
+    <div class="modal-overlay" style="display: none;" id="click-overlay" onclick="hideClickOverlay();"></div>
+    <span id="tooltip" class="tooltip"></span>
+    <div id="board" class="board-container"></div>
+    <div class="scoreboard" id="scoreboard" onclick="onScoreboardClick();"></div>
+    <div id="color-picker"></div>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+
+    <script src='https://cdn.scaledrone.com/scaledrone-lite.min.js'></script>
+
+    <script src="papaparse.min.js"></script>
+
+    <script src="goals.js"></script>
+
+    <script>
+        const pickr = Pickr.create({
+            el: '#color-picker',
+            theme: 'nano',
+            swatches: [
+                "#E53935",
+                '#2196F3',
+                "#4CAF50",
+                "#F9A825",
+                "#9C27B0",
+                "#009688",
+                "#E91E63",
+            ],
+        });
+        pickr.on('change', (color) => {
+            currentColorPickerValue = color.toHEXA().toString();
+            onColorPicked();
+            pickr.hide();
+        });
+    </script>
+
+    <script>
+        function createCell(row, col) {
+            let cell = document.createElement("div");
+            cell.id = `cell_${row}_${col}`;
+            cell.classList.add("cell");
+            cell.addEventListener("click", onCellClick);
+            cell.addEventListener('contextmenu', onContextMenu);
+            let cellText = document.createElement("span");
+            cellText.classList.add("cell-text");
+            cell.appendChild(cellText);
+            let cellGame = document.createElement("span");
+            cellGame.classList.add("cell-game");
+            cell.appendChild(cellGame);
+            let cellInfo = document.createElement("span");
+            cellInfo.classList.add("cell-info");
+            cellInfo.addEventListener('mousemove', onMouseIn);
+            cellInfo.addEventListener('mouseout', onMouseOut);
+            cell.appendChild(cellInfo);
+            let cellPassword = document.createElement("span");
+            cellPassword.classList.add("cell-password");
+            cellPassword.addEventListener('mousemove', onMouseIn);
+            cellPassword.addEventListener('mouseout', onMouseOut);
+            cell.appendChild(cellPassword);
+            let cellStar = document.createElement("span");
+            cellStar.classList.add("cell-star");
+            cellStar.innerHTML = "⭐️";
+            cell.appendChild(cellStar);
+            let cellDiff = document.createElement("span");
+            cellDiff.classList.add("cell-diff");
+            cell.appendChild(cellDiff);
+            return cell;
+        }
+        function initBoardCells() {
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
+                    let cell = createCell(row, col);
+                    document.getElementById("board").appendChild(cell);
+                }
+            }
+        }
+    </script>
+    <script>
+        function showSpinner(text) {
+            let modalOverlay = document.getElementById('modal-overlay');
+            let spinnerText = document.getElementById('spinner-text');
+            spinnerText.innerHTML = text;
+            modalOverlay.style.display = 'flex';
+        }
+
+        function hideSpinner() {
+            let modalOverlay = document.getElementById('modal-overlay');
+            let spinnerText = document.getElementById('spinner-text');
+            spinnerText.innerHTML = "";
+            modalOverlay.style.display = 'none';
+        }
+
+        function showClickOverlay() {
+            document.getElementById("click-overlay").style.display = "flex";
+        }
+
+        function hideClickOverlay() {
+            document.getElementById("click-overlay").style.display = "none";
+        }
+
+        function setStatusBarText(text) {
+            let scoreboard = document.getElementById("scoreboard");
+            scoreboard.innerHTML = "";
+            let item = document.createElement("div");
+            item.classList.add("scoreboard-item");
+            item.classList.add("flashing-font");
+            item.innerText = text;
+            scoreboard.appendChild(item);
+        }
+    </script>
+    <script>
+        const queryParams = new URLSearchParams(window.location.search);
+        const syncTimeout = 10000;
+
+        var playerName = queryParams.get('player');
+        var roomName = queryParams.get('room');
+        var playerColors = {};
+
+        var connected = false;
+        var sync = false;
+        var drone;
+        var room;
+        var historyEvents = [];
+        var syncMemberIds = [];
+        var syncTimer = 0;
+        var syncSource;
+
+        var previousColorPickerValue = "#000000";
+        var currentColorPickerValue = "#000000";
+
+        if (roomName != null) {
+            showSpinner("正在连接服务器...");
+            roomName = `observable-${roomName}`
+            drone = new Scaledrone('DO4LDJ74Bp80Kcso');
+            room = drone.subscribe(roomName);
+            registerEvents();
+        } else {
+            hideSpinner();
+        }
+
+        function sendSyncData(cell, player, sendPlayerColors = false, sendHistoryEvents = false) {
+            let message = {}
+            if (cell != null) {
+                message.cell = cell;
+            }
+            if (player != null) {
+                message.player = player;
+            }
+            if (sendPlayerColors) {
+                message.players = playerColors;
+            }
+            if (sendHistoryEvents) {
+                message.history = historyEvents;
+                message.sync = sync;
+            }
+            drone.publish({
+                room: roomName,
+                message: message
+            })
+        }
+
+        function sendSyncRequest(sourceId) {
+            syncSource = sourceId;
+            drone.publish({
+                room: roomName,
+                message: { syncSource: sourceId }
+            })
+        }
+
+        function registerEvents() {
+            drone.on('open', error => {
+                if (error) {
+                    return console.error(error);
+                }
+                console.log('Connected to server');
+            });
+
+            room.on('open', error => {
+                if (error) {
+                    return console.error(error);
+                }
+                console.log('Connected to room');
+                connected = true;
+                hideSpinner();
+            });
+
+            function askFromSyncMembers(timeout) {
+                if (sync) {
+                    return;
+                }
+                while (syncMemberIds.length > 0) {
+                    let memberId = syncMemberIds.pop();
+                    if (memberId === drone.clientId) {
+                        continue;
+                    }
+                    sendSyncRequest(memberId);
+                    console.log(`Sent sync request to: ${memberId}`);
+                    clearTimeout(syncTimer);
+                    syncTimer = setTimeout(askFromSyncMembers, timeout, timeout);
+                    return;
+                }
+                console.log("No sync member");
+                sync = true;
+            }
+
+            room.on('members', function (members) {
+                console.log("Members", members);
+                syncMemberIds = members.map(member => member.id);
+                askFromSyncMembers(syncTimeout);
+            });
+
+            room.on('member_leave', function (member) {
+                console.log("Member left", member);
+                if (syncMemberIds.includes(member.id)) {
+                    syncMemberIds.splice(syncMemberIds.indexOf(member.id), 1);
+                }
+            });
+
+            function historyIncludes(event) {
+                for (let history of historyEvents) {
+                    if (history.id === event.id) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function mergeHistory(events) {
+                for (let event of events) {
+                    if (!historyIncludes(event)) {
+                        historyEvents.push(event);
+                        toggleCell(event.cell, event.player);
+                    }
+                }
+            }
+
+            room.on('message', message => {
+                console.log("Message", message);
+                if (message.data.players !== undefined) {
+                    for (let [player, color] of Object.entries(message.data.players)) {
+                        playerColors[player] = color;
+                    }
+                    updateBoardColors();
+                    updateScoreboard();
+                }
+                if (message.data.player != null && message.data.cell != null) {
+                    toggleCell(message.data.cell, message.data.player);
+                    historyEvents.push({
+                        id: message.id,
+                        cell: message.data.cell,
+                        player: message.data.player
+                    });
+                }
+                if (message.data.history !== undefined) {
+                    mergeHistory(message.data.history);
+                }
+                if (message.data.sync === true) {
+                    sync = true;
+                    if (!syncMemberIds.includes(message.member.id)) {
+                        syncMemberIds.push(message.member.id);
+                    }
+                }
+                if (message.data.syncSource === drone.clientId) {
+                    sendSyncData(null, null, true, true);
+                    console.log(`Answered sync request from ${message.member.id}`);
+                    return;
+                }
+            });
+
+            drone.on('error', error => {
+                console.error('Error with connection:', error);
+            });
+            drone.on('close', event => {
+                console.log('Connection closed:', event);
+            });
+
+            drone.on('disconnect', () => {
+                console.log('Connection lost');
+                showSpinner("正在重连...");
+                connected = false;
+                sync = false;
+            });
+            drone.on('reconnect', () => {
+                console.log('Connection reestablished');
+                hideSpinner();
+                connected = true;
+                sync = false;
+                askFromSyncMembers(syncTimeout);
+            });
+        }
+
+        function onCellClick(event) {
+            if (event.target.closest(".cell-info,.cell-password") !== null) {
+                return;
+            }
+            let cell = event.target.closest(".cell");
+            if (playerName == undefined) {
+                playerName = "Player";
+            }
+            if (playerColors[playerName] === undefined) {
+                showClickOverlay();
+                pickr.show();
+                return;
+            }
+            if (queryParams.get("lockout") != null && cell.players != undefined && cell.players.length > 0 && !cell.players.includes(playerName)) {
+                return;
+            }
+            if (roomName == null) {
+                toggleCell(cell.id, playerName);
+                return;
+            }
+            if (!connected) {
+                return;
+            }
+            sendSyncData(cell.id, playerName, true, true);
+        }
+
+        function convertColor(hex) {
+            hex = hex.replace(/^#/, '');
+            var r = parseInt(hex.substring(0, 2), 16);
+            var g = parseInt(hex.substring(2, 4), 16);
+            var b = parseInt(hex.substring(4, 6), 16);
+            r /= 255, g /= 255, b /= 255;
+            var max = Math.max(r, g, b), min = Math.min(r, g, b);
+            var h, s, l = (max + min) / 2;
+            if (max == min) {
+                h = s = 0;
+            } else {
+                var d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            var y = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+            return { h: h, s: s, l: l, y: y };
+        }
+
+        function onColorChange() {
+            let hexColor = currentColorPickerValue;
+            // let color = convertColor(hexColor);
+            // if (color.s < 0.2 || color.l < 0.2 || color.l > 0.9) {
+            //     setStatusBarText("请使用更特别的颜色");
+            //     hideClickOverlay();
+            //     return;
+            // }
+            // if (color.y >= 0.5) {
+            //     setStatusBarText("请使用更暗的颜色");
+            //     hideClickOverlay();
+            //     return;
+            // }
+            if (playerName == undefined) {
+                playerName = "Player";
+            }
+            playerColors[playerName] = hexColor;
+            if (roomName == null) {
+                updateBoardColors();
+                updateScoreboard();
+                return;
+            }
+            if (!connected) {
+                return;
+            }
+            sendSyncData(null, null, true, false);
+        }
+    </script>
+
+    <script>
+        function updateBoardColors() {
+            for (let cell of document.querySelectorAll(".cell")) {
+                if (cell.players != undefined) {
+                    updateCellColors(cell.id);
+                }
+            }
+        }
+
+        function updateCellColors(id) {
+            let element = document.getElementById(id);
+            let colors = [];
+            for (let player of element.players) {
+                if (playerColors[player] !== undefined) {
+                    colors.push(playerColors[player]);
+                } else {
+                    colors.push("#000000");
+                }
+            }
+            if (colors.length == 0) {
+                element.style.background = null;
+            }
+            let width = element.offsetWidth;
+            let height = element.offsetHeight;
+            let degree = (Math.atan(height / width) * 180.0 / Math.PI + 90.0) * 0.5;
+            let gradient = `linear-gradient(${Math.floor(degree)}deg`;
+            colors.forEach(function (color, index) {
+                let start = (100 / colors.length) * index;
+                let end = (100 / colors.length) * (index + 1);
+                gradient += `, ${color} ${start}%, ${color} ${end}%`;
+            });
+            gradient += ')';
+            element.style.background = gradient;
+        }
+
+        function toggleCell(id, player) {
+            let cell = document.getElementById(id);
+            if (cell.players === undefined) {
+                cell.players = [player];
+            } else if (cell.players.indexOf(player) == -1) {
+                cell.players.push(player);
+            } else {
+                cell.players.splice(cell.players.indexOf(player), 1);
+            }
+            cell.players.sort();
+            updateBoardColors();
+            updateScoreboard();
+        }
+    </script>
+    <script>
+        function updateScoreboard() {
+            let scoreboard = document.getElementById("scoreboard");
+            scoreboard.innerHTML = "";
+            let scores = {};
+            for (let cell of document.querySelectorAll(".cell")) {
+                if (cell.players === undefined) {
+                    continue;
+                }
+                for (let player of cell.players) {
+                    if (scores[player] === undefined) {
+                        scores[player] = 1;
+                    } else {
+                        scores[player] += 1;
+                    }
+                }
+            }
+            for (let [player, color] of Object.entries(playerColors)) {
+                let item = document.createElement("div");
+                item.classList.add("scoreboard-item");
+                item.style.color = color;
+                let score = scores[player];
+                item.innerHTML = `${player}: ${score == undefined ? 0 : score}`;
+                scoreboard.appendChild(item);
+            }
+            if (scoreboard.childNodes.length == 0) {
+                let item = document.createElement("div");
+                item.classList.add("scoreboard-item");
+                item.innerText = "记分板"
+                scoreboard.appendChild(item);
+            }
+            onResize();
+        }
+
+        function onScoreboardClick() {
+            let scoreboard = document.getElementById("scoreboard");
+            showClickOverlay();
+            pickr.show();
+        }
+    </script>
+    <script>
+        var goalPool;
+
+        function resizeBoardToFitWindow() {
+            let board = document.getElementById("board");
+            let w = window.innerWidth;
+            let h = window.innerHeight;
+            let scoreboard = document.getElementById("scoreboard");
+            let scoreboardHeight = scoreboard.offsetHeight;
+            h = Math.min(h, h - scoreboardHeight);
+            if (w / h > 1.2) {
+                w = h * 1.2;
+            } else if (h / w > 1.2) {
+                h = w * 1.2;
+            }
+            board.style.width = w + "px";
+            board.style.height = h + "px";
+        }
+
+        function resizeTextToFitCell() {
+            let cellTexts = document.querySelectorAll('.cell-text');
+            cellTexts.forEach(function (cellText) {
+                let cell = cellText.closest('.cell');
+                let cellGame = cell.querySelector('.cell-game');
+                let cellStar = cell.querySelector('.cell-star');
+                let cellDiff = cell.querySelector('.cell-diff');
+                let cellWidth = cell.offsetWidth;
+                let cellHeight = cell.offsetHeight;
+                let fontSize = 100;
+                let textWidth, textHeight;
+                do {
+                    cellText.style.fontSize = fontSize + '%';
+                    cellGame.style.fontSize = Math.max(Math.floor(fontSize * 0.5), 1) + '%';
+                    cellDiff.style.fontSize = Math.max(Math.floor(fontSize * 0.5), 1) + '%';
+                    textWidth = cellText.offsetWidth;
+                    textHeight = cellText.offsetHeight;
+                    fontSize -= 1;
+                } while ((textWidth > cellWidth || textHeight > cellHeight * 0.8) && fontSize > 0);
+            });
+        }
+
+        function onResize() {
+            resizeBoardToFitWindow();
+            resizeTextToFitCell();
+        }
+
+        window.addEventListener('resize', function () {
+            onResize();
+        });
+
+        function onColorPicked() {
+            if (currentColorPickerValue != previousColorPickerValue) {
+                previousColorPickerValue = currentColorPickerValue;
+                onColorChange();
+            }
+            hideClickOverlay();
+        }
+
+        function onMouseIn(event) {
+            let tooltip = document.getElementById('tooltip');
+            tooltip.innerHTML = event.currentTarget.dataset.tooltip.replace(/\n/g, '<br />');
+            tooltip.style.left = "0px";
+            tooltip.style.top = "0px";
+
+            let newX = event.clientX + 15;
+            let newY = event.clientY + 30;
+            let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+            let vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+
+            if (newX + tooltip.offsetWidth > vw) {
+                newX = Math.max(0, vw - tooltip.offsetWidth);
+            }
+            tooltip.style.left = newX + "px";
+
+            if (newY + tooltip.offsetHeight > vh) {
+                newY = event.clientY - tooltip.offsetHeight - 15;
+            }
+            tooltip.style.top = newY + "px";
+
+            tooltip.classList.add('show');
+        }
+
+        function onMouseOut(event) {
+            let tooltip = document.getElementById('tooltip');
+            tooltip.classList.remove('show');
+            tooltip.innerHTML = "";
+        }
+
+
+
+        function onContextMenu(event) {
+            event.preventDefault();
+            let cell = event.target.closest(".cell");
+            let star = cell.querySelector(".cell-star");
+            star.classList.toggle("show");
+        }
+
+        function getColor(diff, minDiff, maxDiff) {
+            diff = Math.max(diff, minDiff);
+            diff = Math.min(diff, maxDiff);
+            let normalDiff = 1.0 - (diff - minDiff) / (maxDiff - minDiff);
+            return `hsl(${parseInt((((normalDiff * 180) + 300) % 360))}, 100%, 50%)`;
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            loadGoalPool().then(d => {
+                goalPool = d;
+                initBoardCells();
+                let indexes = queryParams.get('id').split(',').map(function (item) {
+                    return parseInt(item);
+                });
+                for (let i = 0; i < indexes.length; i++) {
+                    let goal = goalPool[indexes[i]];
+                    let cell = document.getElementById('cell_' + Math.floor(i / 5) + '_' + i % 5)
+                    if (goal.rank > 1) {
+                        cell.classList.add('rank' + goal.rank);
+                    }
+
+                    if (goal.diff == undefined) {
+                        goal.diff = goal.rank == undefined ? 1.0 : parseInt(goal.rank);
+                    } else {
+                        goal.diff = parseFloat(goal.diff);
+                    }
+                    cell.dataset.diff = goal.diff;
+
+                    let cellText = cell.querySelector(".cell-text");
+                    cellText.innerHTML = goal.goal;
+
+                    let cellGame = cell.querySelector(".cell-game");
+                    if (goal.games !== undefined && goal.games.length > 0) {
+                        cellGame.innerHTML = "MM" + goal.games.join(',');
+                    } else {
+                        cellGame.innerHTML = "";
+                    }
+
+                    let cellInfo = cell.querySelector(".cell-info");
+                    if (goal.notes != "") {
+                        cellInfo.innerHTML = "<img src='img/info.png'/>";
+                        cellInfo.dataset.tooltip = goal.notes.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+                    }
+                }
+                for (let img of document.querySelectorAll("img")) {
+                    img.alt = "[图片]";
+                }
+                if (queryParams.get("multi") == null) {
+                    for (let cellGame of document.querySelectorAll('.cell-game')) {
+                        cellGame.style.display = 'none';
+                    }
+                }
+                if (queryParams.get("diff") != null) {
+                    for (let cell of document.querySelectorAll('.cell')) {
+                        let cellDiff = cell.querySelector('.cell-diff');
+                        cellDiff.style.color = getColor(cell.dataset.diff, 0.0, 5.0);
+                        cellDiff.innerHTML = cell.dataset.diff;
+                        cellDiff.classList.add('show');
+                    }
+                }
+                updateScoreboard();
+                // onResize();
+            });
+        });
+    </script>
+</body>
+
+</html>
