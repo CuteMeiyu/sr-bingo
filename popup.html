@@ -59,6 +59,7 @@
             border: 1px solid #666;
             cursor: pointer;
             color: #fff;
+            text-shadow: 2px 2px 4px black;
             -webkit-user-select: none;
             user-select: none;
         }
@@ -602,6 +603,7 @@
             }
             if (colors.length == 0) {
                 element.style.background = null;
+                return;
             }
             let width = element.offsetWidth;
             let height = element.offsetHeight;
