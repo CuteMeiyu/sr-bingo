@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Bingo</title>
+    <link rel="stylesheet" href="assets/css/index.css">
+</head>
+
+<body>
+    <label for="games">游戏编号</label>
+    <input type="text" id="games" value="HSR" title="多个游戏用逗号隔开" class="optional" required><br>
+    <label for="ranks">卡片难度</label>
+    <input type="text" id="ranks" value="1,1,2,3,4" title="每条线的任务等级" class="optional" required><br>
+    <label for="seed">随机种子</label>
+    <input type="number" id="seed" title="决定生成结果，默认随机" class="optional" required>
+    <button id="rollButton" class="optional">重投</button><br>
+    <!-- <label for="balance">平衡游戏</label>
+    <input type="checkbox" id="balance" title="让版面上的不同游戏数量尽可能相等"><br> -->
+    <label for="lockout">独占任务</label>
+    <input type="checkbox" id="lockout" title="一个格子只能被一名玩家点亮" class="optional" checked><br>
+    <label for="center">中心最难</label>
+    <input type="checkbox" id="center" title="把最难的任务放到中心" class="optional"><br>
+    <br>
+    <div class="color-picker"></div>
+    <label for="color">颜色</label>
+    <input type="button" id="color" name="color" onclick="pickr.show()" style="width: 50px; background-color: #BFBFBF;"
+        required><br>
+    <label for="player">玩家名</label>
+    <input type="text" id="player" name="player" required><br>
+    <label for="room">房间名</label>
+    <input type="text" id="room" title="单人模式留空" class="optional"><br>
+    <button id="createJoinButton">加入房间</button>
+    <span id="error" style="color: red;"></span><br>
+    <a id="share-link" href=""></a><br><br>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+    <script src="assets/js/color-picker.js"></script>
+    <script src="assets/js/papaparse.min.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/goals.js"></script>
+    <script src="assets/js/generators/ranked.js"></script>
+    <script src="assets/js/index.js"></script>
+</body>
+
+</html>

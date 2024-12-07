@@ -1,0 +1,16 @@
+.hidden {
+    display: none;
+}
+
+.external-links {
+    font-size: small;
+}
+
+.missing {
+    border: 1px solid red;
+}
+
+.pickr {
+    height: 0;
+    visibility: hidden;
+}

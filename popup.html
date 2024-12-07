@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo</title>
+    <link rel="stylesheet" href="assets/css/popup.css">
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="spinner"></div>
+        <span class="spinner-text" id="spinner-text">正在加载...</span>
+    </div>
+    <div class="modal-overlay" style="display: none;" id="click-overlay" onclick="hideClickOverlay();"></div>
+    <span id="tooltip" class="tooltip"></span>
+    <div id="board" class="board-container"></div>
+    <div class="scoreboard" id="scoreboard" onclick="onScoreboardClick();"></div>
+    <div class="color-picker"></div>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/nano.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+    <script src='https://cdn.scaledrone.com/scaledrone-lite.min.js'></script>
+    <script src="assets/js/color-picker.js"></script>
+    <script src="assets/js/papaparse.min.js"></script>
+    <script src="assets/js/goals.js"></script>
+    <script src="assets/js/sync.js"></script>
+    <script src="assets/js/modal-overlay.js"></script>
+    <script src="assets/js/window-control.js"></script>
+    <script src="assets/js/popup.js"></script>
+</body>
+
+</html>
