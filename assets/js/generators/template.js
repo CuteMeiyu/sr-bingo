@@ -1,10 +1,5 @@
-(function (root, factory) {
-    root.TemplateGenerator = factory();
-}(this, function () {
-    var Generator = {};
-    Generator.generate = generate;
-    
-    function generate(goalPool, settings) {
+class TemplateGenerator {
+    static generate(goalPool, settings) {
         return [
             0, 1, 2, 3, 4,
             5, 6, 7, 8, 9,
@@ -13,5 +8,4 @@
             20, 21, 22, 23, 24
         ];
     }
-    return Generator;
-}));
+}
