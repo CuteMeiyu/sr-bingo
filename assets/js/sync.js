@@ -18,6 +18,9 @@ class Sync {
         this.onReconnectListeners = [];
         this.onActionListeners = [];
 
+        this.startTime = null;
+        this.endTime = null;
+
         this.askResolve = null;
 
         if (roomName == "" || roomName == null) {
@@ -94,37 +97,52 @@ class Sync {
 
     }
 
+    sendData(data) {
+        data.time = Date.now();
+        if (this.online) {
+            this.drone.publish({ room: this.roomName, message: data });
+        } else {
+            data.history = JSON.parse(JSON.stringify(data.history));
+            this.onMessage({ id: `#${this.messageNumber}`, data: data });
+            this.messageNumber++;
+        }
+    }
+
     sendFlag(cellId, playerName, flag) {
-        let data = {
-            time: Date.now(),
+        this.sendData({
             player: playerName,
             cid: cellId,
             flag: flag,
             history: this.history,
             sync: this.sync,
-        };
-        if (this.online) {
-            this.drone.publish({ room: this.roomName, message: data });
-        } else {
-            data.history = JSON.parse(JSON.stringify(data.history));
-            this.onMessage({ id: `#${this.messageNumber}`, data: data });
-        }
+        });
     }
 
     sendColor(playerName, color) {
-        let data = {
-            time: Date.now(),
+        this.sendData({
             player: playerName,
             color: color,
             history: this.history,
             sync: this.sync,
+        });
+    }
+
+    sendTimeout(endTimeString, startTimeString) {
+        function parseTime(timeString) {
+            let parts = timeString.split(":");
+            let time = 0;
+            for (let i = parts.length - 1; i >= 0; --i) {
+                time += parseInt(parts[i]) * Math.pow(60, parts.length - 1 - i);
+            }
+            return time * 1000;
         }
-        if (this.online) {
-            this.drone.publish({ room: this.roomName, message: data });
-        } else {
-            data.history = JSON.parse(JSON.stringify(data.history));
-            this.onMessage({ id: `#${this.messageNumber}`, data: data });
-        }
+        let startTime = Date.now() + parseTime(startTimeString) - 500;
+        let endTime = startTime + parseTime(endTimeString);
+        this.sendData({
+            startTime: startTime,
+            endTime: endTime,
+            history: this.history,
+        });
     }
 
     getPlayerColor(playerName) {
@@ -184,6 +202,10 @@ class Sync {
         } else if (message.data.color != undefined) {
             operation.player = message.data.player;
             operation.color = message.data.color;
+            this.history.push(operation);
+        } else if (message.data.endTime != undefined) {
+            operation.startTime = message.data.startTime;
+            operation.endTime = message.data.endTime;
             this.history.push(operation);
         }
         this.history = [...this.history, ...message.data.history];
@@ -250,13 +272,16 @@ class Sync {
                         }
                     }
                 }
-            } else { // color
+            } else if (operation.color != undefined) {
                 const index = this.players.findIndex(player => player.name == operation.player);
                 if (index < 0) {
                     this.players.push({ name: operation.player, color: operation.color, count: 0 });
                 } else {
                     this.players[index].color = operation.color;
                 }
+            } else if (operation.endTime != undefined) {
+                this.startTime = operation.startTime;
+                this.endTime = operation.endTime;
             }
         }
     }

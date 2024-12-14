@@ -32,6 +32,21 @@
         1px 1px 0 #fff;
 }
 
+.scoreboard-item-timeout {
+    display: inline-block;
+    padding: 2px;
+    padding-inline: 10px;
+    color: #000;
+    font-weight: bold;
+    text-shadow:
+        -1px -1px 0 #fff,
+        1px -1px 0 #fff,
+        -1px 1px 0 #fff,
+        1px 1px 0 #fff;
+    position: fixed;
+    right: 0;
+}
+
 .pickr {
     height: 0;
     visibility: hidden;

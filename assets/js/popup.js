@@ -229,6 +229,32 @@ function updateBoardColors() {
     }
 }
 
+function getTimeleft() {
+    let delta = sync.startTime - Date.now();
+    if (delta < 0) {
+        delta = sync.endTime - Date.now();
+    }
+    if (delta < 0) {
+        return 0;
+    }
+    return delta;
+}
+
+function formatTimeDelta(timeleft) {
+    if (timeleft <= 0) {
+        return "00:00";
+    }
+    let seconds = Math.floor((timeleft / 1000) % 60);
+    let minutes = Math.floor((timeleft / (1000 * 60)) % 60);
+    let hours = Math.floor((timeleft / (1000 * 60 * 60)) % 24);
+    let result = "";
+    if (hours > 0) {
+        result += hours.toString().padStart(2, '0') + ":"
+    }
+    result += minutes.toString().padStart(2, '0') + ":" + seconds.toString().padStart(2, '0');
+    return result;
+}
+
 function updateScoreboard() {
     let scoreboard = document.getElementById("scoreboard");
     scoreboard.innerHTML = "";
@@ -244,6 +270,21 @@ function updateScoreboard() {
         item.classList.add("scoreboard-item");
         item.innerText = "记分板"
         scoreboard.appendChild(item);
+    }
+    if (sync.startTime != null) {
+        let item = document.createElement("div");
+        let timeleft = getTimeleft();
+        item.classList.add("scoreboard-item-timeout");
+        item.innerText = `⏰ ${formatTimeDelta(timeleft)}`;
+        if (timeleft <= 60000) {
+            item.style.color = "red";
+        }
+        scoreboard.appendChild(item);
+        if (scoreboardInterval == null) {
+            scoreboardInterval = setInterval(() => {
+                updateScoreboard();
+            }, 1000);
+        }
     }
     onResize();
 }
@@ -264,6 +305,8 @@ var playerName = queryParams.get('player');
 playerName = playerName != null ? playerName : "Player";
 
 var roomName = queryParams.get('room');
+
+var scoreboardInterval = null;
 
 var previousColorPickerValue = `#${queryParams.get('color')}`;
 var currentColorPickerValue = previousColorPickerValue;
