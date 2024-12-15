@@ -1,3 +1,12 @@
+* {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 .board-container {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -36,7 +45,7 @@
     display: inline-block;
     padding: 2px;
     padding-inline: 10px;
-    color: #000;
+    color: #007f00;
     font-weight: bold;
     text-shadow:
         -1px -1px 0 #fff,

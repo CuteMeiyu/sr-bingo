@@ -127,20 +127,10 @@ class Sync {
         });
     }
 
-    sendTimeout(endTimeString, startTimeString) {
-        function parseTime(timeString) {
-            let parts = timeString.split(":");
-            let time = 0;
-            for (let i = parts.length - 1; i >= 0; --i) {
-                time += parseInt(parts[i]) * Math.pow(60, parts.length - 1 - i);
-            }
-            return time * 1000;
-        }
-        let startTime = Date.now() + parseTime(startTimeString) - 500;
-        let endTime = startTime + parseTime(endTimeString);
+    sendTimeout(gameTime, readyTime) {
         this.sendData({
-            startTime: startTime,
-            endTime: endTime,
+            gameTime: gameTime,
+            readyTime: readyTime,
             history: this.history,
         });
     }
@@ -203,9 +193,9 @@ class Sync {
             operation.player = message.data.player;
             operation.color = message.data.color;
             this.history.push(operation);
-        } else if (message.data.endTime != undefined) {
-            operation.startTime = message.data.startTime;
-            operation.endTime = message.data.endTime;
+        } else if (message.data.gameTime != undefined) {
+            operation.startTime = message.data.readyTime + message.data.time;
+            operation.endTime = message.data.gameTime + operation.startTime;
             this.history.push(operation);
         }
         this.history = [...this.history, ...message.data.history];
