@@ -229,24 +229,23 @@ function updateBoardColors() {
     }
 }
 
-function getTimeleft() {
-    let delta = sync.startTime - Date.now();
-    if (delta < 0) {
-        delta = sync.endTime - Date.now();
-    }
-    if (delta < 0) {
-        return 0;
-    }
-    return delta;
+function getTimeDelta(currentTime) {
+    currentTime = currentTime || Date.now();
+    let readyTimeDelta = sync.startTime - currentTime;
+    let gameTimeDelta = sync.endTime - currentTime;
+    readyTimeDelta = Math.max(0, readyTimeDelta);
+    gameTimeDelta = Math.max(0, gameTimeDelta);
+    return [gameTimeDelta, readyTimeDelta];
 }
 
-function formatTimeDelta(timeleft) {
-    if (timeleft <= 0) {
+function formatTimeDelta(timeDelta) {
+    if (timeDelta <= 0) {
         return "00:00";
     }
-    let seconds = Math.floor((timeleft / 1000) % 60);
-    let minutes = Math.floor((timeleft / (1000 * 60)) % 60);
-    let hours = Math.floor((timeleft / (1000 * 60 * 60)) % 24);
+    timeDelta += 500;
+    let seconds = Math.floor((timeDelta / 1000) % 60);
+    let minutes = Math.floor((timeDelta / (1000 * 60)) % 60);
+    let hours = Math.floor((timeDelta / (1000 * 60 * 60)) % 24);
     let result = "";
     if (hours > 0) {
         result += hours.toString().padStart(2, '0') + ":"
@@ -273,18 +272,43 @@ function updateScoreboard() {
     }
     if (sync.startTime != null) {
         let item = document.createElement("div");
-        let timeleft = getTimeleft();
+        let [gameTimeDelta, readyTimeDelta] = getTimeDelta();
         item.classList.add("scoreboard-item-timeout");
-        item.innerText = `⏰ ${formatTimeDelta(timeleft)}`;
-        if (timeleft <= 60000) {
-            item.style.color = "red";
+        if (readyTimeDelta > 0) {
+            item.style.color = "#4CAF50";
+            item.innerText = `⏰ ${formatTimeDelta(readyTimeDelta)}`;
+        } else if (gameTimeDelta > 0) {
+            item.style.color = "#E53935";
+            item.innerText = `⏰ ${formatTimeDelta(gameTimeDelta)}`;
+        } else {
+            item.style.color = "#2196F3";
+            item.innerText = "⏰ 00:00";
         }
-        scoreboard.appendChild(item);
-        if (scoreboardInterval == null) {
+        if (sync.pauseTime != null) {
+            item.style.color = "#2196F3";
+        }
+        if (scoreboardInterval == null && sync.pauseTime == null) {
             scoreboardInterval = setInterval(() => {
                 updateScoreboard();
             }, 1000);
         }
+        item.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (sync.pauseTime == null) {
+                sync.sendPause(Date.now());
+                clearInterval(scoreboardInterval);
+                scoreboardInterval = null;
+            } else {
+                let [gameTimeDelta, readyTimeDelta] = getTimeDelta(sync.pauseTime);
+                sync.sendTimeout(gameTimeDelta, readyTimeDelta);
+                clearInterval(scoreboardInterval);
+                scoreboardInterval = setInterval(() => {
+                    updateScoreboard();
+                }, 1000);
+            }
+        });
+        scoreboard.appendChild(item);
     }
     onResize();
 }

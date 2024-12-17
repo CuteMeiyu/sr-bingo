@@ -20,6 +20,7 @@ class Sync {
 
         this.startTime = null;
         this.endTime = null;
+        this.pauseTime = null;
 
         this.askResolve = null;
 
@@ -135,6 +136,14 @@ class Sync {
         });
     }
 
+    sendPause(pauseTime) {
+        pauseTime = pauseTime || Date.now();
+        this.sendData({
+            pauseTime: pauseTime,
+            history: this.history,
+        })
+    }
+
     getPlayerColor(playerName) {
         const index = this.players.findIndex(player => player.name == playerName);
         if (index < 0) {
@@ -196,6 +205,9 @@ class Sync {
         } else if (message.data.gameTime != undefined) {
             operation.startTime = message.data.readyTime + message.data.time;
             operation.endTime = message.data.gameTime + operation.startTime;
+            this.history.push(operation);
+        } else if (message.data.pauseTime != undefined) {
+            operation.pauseTime = message.data.pauseTime;
             this.history.push(operation);
         }
         this.history = [...this.history, ...message.data.history];
@@ -272,6 +284,9 @@ class Sync {
             } else if (operation.endTime != undefined) {
                 this.startTime = operation.startTime;
                 this.endTime = operation.endTime;
+                this.pauseTime = null;
+            } else if (operation.pauseTime != undefined) {
+                this.pauseTime = operation.pauseTime;
             }
         }
     }
