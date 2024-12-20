@@ -233,8 +233,6 @@ function getTimeDelta(currentTime) {
     currentTime = currentTime || Date.now();
     let readyTimeDelta = sync.startTime - currentTime;
     let gameTimeDelta = sync.endTime - currentTime;
-    readyTimeDelta = Math.max(0, readyTimeDelta);
-    gameTimeDelta = Math.max(0, gameTimeDelta);
     return [gameTimeDelta, readyTimeDelta];
 }
 
