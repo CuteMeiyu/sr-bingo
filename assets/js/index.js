@@ -106,6 +106,7 @@ const regularFuncs = {
     // "balance": function (x) { return x.checked; },
     "lockout": function (x) { return x.checked; },
     "center": function (x) { return x.checked; },
+    "loop": function (x) { return x.checked; },
     "room": function (x) { return x.value; },
     "player": function (x) { return x.value; },
     "color": function (x) { return rgbToHex(x.style.backgroundColor); },
