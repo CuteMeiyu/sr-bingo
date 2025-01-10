@@ -102,6 +102,7 @@ function rgbToHex(rgb) {
 const regularFuncs = {
     "games": function (x) { return x.value.split(/[,，]\s*/); },
     "ranks": function (x) { return x.value.split(/[,，]\s*/).map(function (item) { return parseInt(item); }); },
+    "scores": function (x) { return x.value.split(/[,，]\s*/).map(function (item) { return parseInt(item); }); },
     "seed": function (x) { return parseInt(x.value); },
     // "balance": function (x) { return x.checked; },
     "lockout": function (x) { return x.checked; },
@@ -148,6 +149,7 @@ function createOrJoinRoom() {
     try {
         let card = RankedGenerator.generate(goalPool, settings);
         let params = "id=" + card.map(id => id).join(",");
+        params += "&scores=" + settings.scores.join(",");
         if (settings.player.length > 0) {
             params += "&" + new URLSearchParams({ "player": settings.player }).toString();
         }
@@ -162,6 +164,9 @@ function createOrJoinRoom() {
         }
         if (settings.lockout) {
             params += "&lockout";
+        }
+        if (settings.loop) {
+            params += "&loop";
         }
         window.open('popup.html?' + params, 'Bingo', 'width=800,height=800');
         unlockOptional();

@@ -259,9 +259,9 @@ class Sync {
                         this.board[operation.cid].push(operation.player);
                         const index = this.players.findIndex(player => player.name == operation.player);
                         if (index < 0) {
-                            this.players.push({ name: operation.player, color: null, count: 1 });
+                            this.players.push({ name: operation.player, color: null, cids: [operation.cid] });
                         } else {
-                            this.players[index].count++;
+                            this.players[index].cids.push(operation.cid);
                         }
                     }
                 } else {
@@ -270,14 +270,17 @@ class Sync {
                         this.board[operation.cid].splice(cid, 1);
                         const pid = this.players.findIndex(player => player.name == operation.player);
                         if (pid >= 0) {
-                            this.players[pid].count--;
+                            const cIndex = this.players[pid].cids.findIndex(cellId => cellId == operation.cid);
+                            if (cIndex >= 0) {
+                                this.players[pid].cids.splice(cIndex, 1);
+                            }
                         }
                     }
                 }
             } else if (operation.color != undefined) {
                 const index = this.players.findIndex(player => player.name == operation.player);
                 if (index < 0) {
-                    this.players.push({ name: operation.player, color: operation.color, count: 0 });
+                    this.players.push({ name: operation.player, color: operation.color, cids: [] });
                 } else {
                     this.players[index].color = operation.color;
                 }
