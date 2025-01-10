@@ -34,24 +34,14 @@
     padding-inline: 10px;
     color: #000;
     font-weight: bold;
-    text-shadow:
-        -1px -1px 0 #fff,
-        1px -1px 0 #fff,
-        -1px 1px 0 #fff,
-        1px 1px 0 #fff;
+    -webkit-text-stroke: 4px transparent;
+    background-color: #fff;
+    background-clip: text;
+    -webkit-background-clip: text;
 }
 
-.scoreboard-item-timeout {
-    display: inline-block;
-    padding: 2px;
-    padding-inline: 10px;
+.scoreboard-item.timeout {
     color: #007f00;
-    font-weight: bold;
-    text-shadow:
-        -1px -1px 0 #fff,
-        1px -1px 0 #fff,
-        -1px 1px 0 #fff,
-        1px 1px 0 #fff;
     position: fixed;
     right: 0;
 }
@@ -68,8 +58,6 @@
     cursor: pointer;
     color: #fff;
     text-shadow: 2px 2px 4px black;
-    -webkit-user-select: none;
-    user-select: none;
 }
 
 .rank2 {

@@ -231,8 +231,8 @@ function updateBoardColors() {
 
 function getTimeDelta(currentTime) {
     currentTime = currentTime || Date.now();
-    let readyTimeDelta = sync.startTime - currentTime;
-    let gameTimeDelta = sync.endTime - currentTime;
+    let readyTimeDelta = Math.max(sync.startTime - currentTime, 0);
+    let gameTimeDelta = Math.max(sync.endTime - currentTime, 0);
     return [gameTimeDelta, readyTimeDelta];
 }
 
@@ -305,7 +305,7 @@ function updateScoreboard() {
     if (sync.startTime != null) {
         let item = document.createElement("div");
         let [gameTimeDelta, readyTimeDelta] = getTimeDelta();
-        item.classList.add("scoreboard-item-timeout");
+        item.classList.add("scoreboard-item", "timeout");
         if (readyTimeDelta > 0) {
             item.style.color = "#4CAF50";
             item.innerText = `⏰ ${formatTimeDelta(readyTimeDelta)}`;
